@@ -1,0 +1,9 @@
+{
+  "name": "cursor-mini-game",
+  "version": "1.0.0",
+  "description": "A simple browser mini game created by Cursor AI assistant.",
+  "private": true,
+  "scripts": {
+    "start": "npx serve ."
+  }
+}
