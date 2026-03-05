@@ -93,6 +93,11 @@ async function initCamera() {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     cameraVideo.srcObject = stream;
     cameraEnabled = true;
+    
+    // 当摄像头视频元数据加载完成后，根据实际尺寸调整canvas
+    cameraVideo.addEventListener('loadedmetadata', () => {
+      handleResize(); // 重新调整canvas尺寸以匹配摄像头宽高比
+    });
   } catch (err) {
     console.error("获取摄像头权限失败：", err);
   }
@@ -526,7 +531,12 @@ canvas.addEventListener("click", (e) => {
 function handleResize() {
   const maxWidth = 800;
   const maxHeight = 600;
-  const aspectRatio = 4 / 3;
+  let aspectRatio = 4 / 3; // 默认比例
+  
+  // 如果摄像头可用，使用摄像头的实际宽高比
+  if (cameraEnabled && cameraVideo.videoWidth && cameraVideo.videoHeight) {
+    aspectRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+  }
   
   // 获取父容器的可用宽度
   const containerWidth = Math.min(maxWidth, window.innerWidth - 40);
