@@ -33,6 +33,7 @@ let bulletCooldown = 0;
 let lastSpawn = 0;
 let spawnInterval = 900;
 let gameOver = false;
+let gameStarted = false; // 新状态变量：游戏是否已开始
 let score = 0;
 let lastTime = 0;
 
@@ -440,7 +441,62 @@ function drawGameOver() {
   ctx.fillText("重新开始", canvasWidth / 2, btnY + btnHeight / 2 + 6);
 }
 
+// 绘制开始游戏画面
+function drawStartScreen() {
+  // 绘制背景
+  drawBackground();
+  
+  // 绘制半透明遮罩
+  ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+  
+  // 游戏标题
+  ctx.fillStyle = "#e5e7eb";
+  ctx.textAlign = "center";
+  ctx.font = "42px system-ui";
+  ctx.fillText("飞机大战", canvasWidth / 2, canvasHeight / 2 - 80);
+  
+  // 副标题
+  ctx.font = "18px system-ui";
+  ctx.fillStyle = "#9ca3af";
+  ctx.fillText("用右手食指控制飞机", canvasWidth / 2, canvasHeight / 2 - 40);
+  ctx.fillText("自动发射子弹，击中敌机得分", canvasWidth / 2, canvasHeight / 2 - 15);
+  
+  // 绘制开始游戏按钮
+  const btnWidth = 200;
+  const btnHeight = 50;
+  const btnX = canvasWidth / 2 - btnWidth / 2;
+  const btnY = canvasHeight / 2 + 20;
+  
+  // 按钮背景
+  const btnGradient = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnHeight);
+  btnGradient.addColorStop(0, "#3b82f6");
+  btnGradient.addColorStop(1, "#1e40af");
+  ctx.fillStyle = btnGradient;
+  ctx.fillRect(btnX, btnY, btnWidth, btnHeight);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(btnX, btnY, btnWidth, btnHeight);
+  
+  // 按钮文字
+  ctx.fillStyle = "white";
+  ctx.font = "20px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("开始游戏", canvasWidth / 2, btnY + btnHeight / 2 + 8);
+  
+  // 提示文字
+  ctx.font = "14px system-ui";
+  ctx.fillStyle = "#9ca3af";
+  ctx.fillText("点击按钮或按空格键开始", canvasWidth / 2, canvasHeight / 2 + 90);
+}
+
 function loop(timestamp) {
+  if (!gameStarted) {
+    drawStartScreen();
+    requestAnimationFrame(loop);
+    return;
+  }
+
   if (gameOver) {
     drawBackground();
     drawPlayer();
@@ -465,36 +521,54 @@ function loop(timestamp) {
 window.addEventListener("keydown", (e) => {
   // 任意按键触发一次背景音乐
   startBgm();
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-    keys.left = true;
+  
+  // 处理开始游戏
+  if (e.code === "Space" && !gameStarted) {
+    e.preventDefault();
+    gameStarted = true;
+    resetGame(); // 确保游戏状态正确初始化
+    return;
   }
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-    keys.right = true;
-  }
-   if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
-    keys.up = true;
-  }
-  if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
-    keys.down = true;
-  }
+  
+  // 处理游戏结束时的重新开始
   if (e.code === "Space" && gameOver) {
     e.preventDefault();
     resetGame();
+    return;
+  }
+  
+  // 只有在游戏开始后才处理移动按键
+  if (gameStarted && !gameOver) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+      keys.left = true;
+    }
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+      keys.right = true;
+    }
+     if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+      keys.up = true;
+    }
+    if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+      keys.down = true;
+    }
   }
 });
 
 window.addEventListener("keyup", (e) => {
-  if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
-    keys.left = false;
-  }
-  if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
-    keys.right = false;
-  }
-  if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
-    keys.up = false;
-  }
-  if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
-    keys.down = false;
+  // 只有在游戏开始后才处理移动按键的释放
+  if (gameStarted && !gameOver) {
+    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") {
+      keys.left = false;
+    }
+    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") {
+      keys.right = false;
+    }
+    if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") {
+      keys.up = false;
+    }
+    if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") {
+      keys.down = false;
+    }
   }
 });
 
@@ -507,15 +581,30 @@ window.addEventListener("click", () => {
 canvas.addEventListener("click", (e) => {
   startBgm();
   
+  // 检查点击位置
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  
+  const clickX = (e.clientX - rect.left) * scaleX;
+  const clickY = (e.clientY - rect.top) * scaleY;
+  
+  // 如果在开始屏幕，检查是否点击了开始游戏按钮
+  if (!gameStarted) {
+    const btnWidth = 200;
+    const btnHeight = 50;
+    const btnX = canvasWidth / 2 - btnWidth / 2;
+    const btnY = canvasHeight / 2 + 20;
+    
+    if (clickX >= btnX && clickX <= btnX + btnWidth && clickY >= btnY && clickY <= btnY + btnHeight) {
+      gameStarted = true;
+      resetGame(); // 确保游戏状态正确初始化
+    }
+    return;
+  }
+  
   // 如果游戏结束，检查是否点击了重新开始按钮
   if (gameOver) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    
-    const clickX = (e.clientX - rect.left) * scaleX;
-    const clickY = (e.clientY - rect.top) * scaleY;
-    
     const btnWidth = 160;
     const btnHeight = 40;
     const btnX = canvasWidth / 2 - btnWidth / 2;
