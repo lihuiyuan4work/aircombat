@@ -2,20 +2,19 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>飞机大战</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container">
       <h1>飞机大战</h1>
-      <canvas id="gameCanvas" width="800" height="600"></canvas>
+      <canvas id="gameCanvas"></canvas>
       <video
         id="camera"
         autoplay
         playsinline
         muted
-        width="200"
-        height="150"
         style="transform: scaleX(-1);"
       ></video>
       <div class="info">
@@ -23,7 +22,7 @@
         <p>操作：← → 或 A / D 移动（备用）</p>
         <p>右手上下左右控制飞机，飞机自动发射子弹</p>
         <p>子弹击中敌机后，敌机会消失并加分（飞出屏幕不加分）</p>
-        <p>游戏结束后按空格键重新开始</p>
+        <p>游戏结束后点击按钮或按空格键重新开始</p>
       </div>
     </div>
     <audio id="bgm" src="bgm.mp3" loop></audio>

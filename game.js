@@ -1,14 +1,20 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
+// 设置canvas默认尺寸
+let canvasWidth = 800;
+let canvasHeight = 600;
+canvas.width = canvasWidth;
+canvas.height = canvasHeight;
+
 const cameraVideo = document.getElementById("camera");
 const bgmAudio = document.getElementById("bgm");
 const explosionAudio = document.getElementById("explosion");
 let cameraEnabled = false;
 
 const player = {
-  x: canvas.width / 2 - 20,
-  y: canvas.height - 60,
+  x: canvasWidth / 2 - 20,
+  y: canvasHeight - 60,
   w: 40,
   h: 40,
   speed: 6,
@@ -140,8 +146,11 @@ async function processHandTracking() {
 }
 
 function resetGame() {
-  player.x = canvas.width / 2 - player.w / 2;
+  player.x = canvasWidth / 2 - player.w / 2;
+  player.y = canvasHeight - 60;
   obstacles = [];
+  bullets = [];
+  bulletCooldown = 0;
   lastSpawn = 0;
   spawnInterval = 900;
   gameOver = false;
@@ -154,7 +163,7 @@ function resetGame() {
 
 function spawnObstacle() {
   const width = 40 + Math.random() * 40;
-  const x = Math.random() * (canvas.width - width);
+  const x = Math.random() * (canvasWidth - width);
   const speed = 2 + Math.random() * 2 + score * 0.01;
   obstacles.push({
     x,
@@ -171,8 +180,8 @@ function update(dt) {
 
   if (useHandControl) {
     // 手部位置控制角色（平滑移动）
-    const targetX = handPos.x * canvas.width - player.w / 2;
-    const targetY = handPos.y * canvas.height - player.h / 2;
+    const targetX = handPos.x * canvasWidth - player.w / 2;
+    const targetY = handPos.y * canvasHeight - player.h / 2;
     const alpha = 0.75; // 越大越“跟手”
     player.x += (targetX - player.x) * alpha;
     player.y += (targetY - player.y) * alpha;
@@ -194,9 +203,9 @@ function update(dt) {
 
   // 边界限制
   if (player.x < 0) player.x = 0;
-  if (player.x + player.w > canvas.width) player.x = canvas.width - player.w;
+  if (player.x + player.w > canvasWidth) player.x = canvasWidth - player.w;
   if (player.y < 0) player.y = 0;
-  if (player.y + player.h > canvas.height) player.y = canvas.height - player.h;
+  if (player.y + player.h > canvasHeight) player.y = canvasHeight - player.h;
 
   // 自动发射子弹
   const bulletInterval = 80; // 毫秒（越小射得越快）
@@ -285,23 +294,23 @@ function update(dt) {
 function drawBackground() {
   if (cameraEnabled && cameraVideo.readyState >= 2) {
     ctx.save();
-    ctx.translate(canvas.width, 0);
+    ctx.translate(canvasWidth, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(cameraVideo, 0, 0, canvasWidth, canvasHeight);
     ctx.restore();
     ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   } else {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvasHeight);
     gradient.addColorStop(0, "#020617");
     gradient.addColorStop(1, "#0f172a");
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
   }
 
   ctx.fillStyle = "rgba(148, 163, 184, 0.12)";
-  for (let y = 0; y < canvas.height; y += 30) {
-    ctx.fillRect(0, y, canvas.width, 1);
+  for (let y = 0; y < canvasHeight; y += 30) {
+    ctx.fillRect(0, y, canvasWidth, 1);
   }
 }
 
@@ -389,19 +398,41 @@ function drawObstacles() {
 
 function drawGameOver() {
   ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
-  ctx.fillRect(30, canvas.height / 2 - 70, canvas.width - 60, 140);
+  ctx.fillRect(30, canvasHeight / 2 - 70, canvasWidth - 60, 140);
 
   ctx.fillStyle = "#e5e7eb";
   ctx.textAlign = "center";
   ctx.font = "28px system-ui";
-  ctx.fillText("游戏结束", canvas.width / 2, canvas.height / 2 - 20);
+  ctx.fillText("游戏结束", canvasWidth / 2, canvasHeight / 2 - 20);
 
   ctx.font = "18px system-ui";
-  ctx.fillText(`得分：${score}`, canvas.width / 2, canvas.height / 2 + 10);
+  ctx.fillText(`得分：${score}`, canvasWidth / 2, canvasHeight / 2 + 10);
 
   ctx.font = "14px system-ui";
   ctx.fillStyle = "#9ca3af";
-  ctx.fillText("按空格键重新开始", canvas.width / 2, canvas.height / 2 + 40);
+  ctx.fillText("按空格键或点击按钮重新开始", canvasWidth / 2, canvasHeight / 2 + 40);
+  
+  // 绘制重新开始按钮
+  const btnWidth = 160;
+  const btnHeight = 40;
+  const btnX = canvasWidth / 2 - btnWidth / 2;
+  const btnY = canvasHeight / 2 + 60;
+  
+  // 按钮背景
+  const btnGradient = ctx.createLinearGradient(btnX, btnY, btnX, btnY + btnHeight);
+  btnGradient.addColorStop(0, "#3b82f6");
+  btnGradient.addColorStop(1, "#1e40af");
+  ctx.fillStyle = btnGradient;
+  ctx.fillRect(btnX, btnY, btnWidth, btnHeight, 8);
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(btnX, btnY, btnWidth, btnHeight, 8);
+  
+  // 按钮文字
+  ctx.fillStyle = "white";
+  ctx.font = "16px system-ui";
+  ctx.textAlign = "center";
+  ctx.fillText("重新开始", canvasWidth / 2, btnY + btnHeight / 2 + 6);
 }
 
 function loop(timestamp) {
@@ -466,9 +497,64 @@ window.addEventListener("keyup", (e) => {
 window.addEventListener("click", () => {
   startBgm();
 });
-canvas.addEventListener("click", () => {
+
+// 处理canvas点击事件
+canvas.addEventListener("click", (e) => {
   startBgm();
+  
+  // 如果游戏结束，检查是否点击了重新开始按钮
+  if (gameOver) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const clickX = (e.clientX - rect.left) * scaleX;
+    const clickY = (e.clientY - rect.top) * scaleY;
+    
+    const btnWidth = 160;
+    const btnHeight = 40;
+    const btnX = canvasWidth / 2 - btnWidth / 2;
+    const btnY = canvasHeight / 2 + 60;
+    
+    if (clickX >= btnX && clickX <= btnX + btnWidth && clickY >= btnY && clickY <= btnY + btnHeight) {
+      resetGame();
+    }
+  }
 });
+
+// 处理窗口大小变化
+function handleResize() {
+  const maxWidth = 800;
+  const maxHeight = 600;
+  const aspectRatio = 4 / 3;
+  
+  // 获取父容器的可用宽度
+  const containerWidth = Math.min(maxWidth, window.innerWidth - 40);
+  const containerHeight = Math.min(maxHeight, window.innerHeight - 120);
+  
+  // 计算适合的canvas尺寸，保持宽高比
+  let newWidth = containerWidth;
+  let newHeight = newWidth / aspectRatio;
+  
+  if (newHeight > containerHeight) {
+    newHeight = containerHeight;
+    newWidth = newHeight * aspectRatio;
+  }
+  
+  // 更新canvas尺寸
+  canvasWidth = Math.round(newWidth);
+  canvasHeight = Math.round(newHeight);
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+  
+  // 更新player位置
+  player.x = Math.min(player.x, canvasWidth - player.w);
+  player.y = Math.min(player.y, canvasHeight - player.h);
+}
+
+// 初始化大小并监听窗口变化
+window.addEventListener("resize", handleResize);
+handleResize();
 
 lastTime = performance.now();
 requestAnimationFrame(loop);
