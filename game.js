@@ -723,9 +723,11 @@ function handleResize() {
     console.log("使用屏幕宽高比:", aspectRatio);
   }
   
-  // 获取窗口的可用宽度和高度，考虑页面边距
-  const containerWidth = window.innerWidth - 80; // 左右各40px边距
-  const containerHeight = window.innerHeight - 200; // 上下边距，包括状态栏和底部信息
+  // 获取窗口的可用宽度和高度，考虑页面比例边距
+  const leftRightMargin = window.innerWidth * 0.1; // 左右各10%
+  const topBottomMargin = window.innerHeight * 0.2; // 上下各20%
+  const containerWidth = window.innerWidth - (leftRightMargin * 2); // 左右边距
+  const containerHeight = window.innerHeight - (topBottomMargin * 2); // 上下边距
   
   // 计算适合的canvas尺寸，保持宽高比
   let newWidth = containerWidth;
