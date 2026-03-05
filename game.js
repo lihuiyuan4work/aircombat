@@ -737,13 +737,9 @@ function handleResize() {
     newWidth = newHeight * aspectRatio;
   }
   
-  // 将游戏范围调整到当前的80%
-  newWidth *= 0.8;
-  newHeight *= 0.8;
-  
-  // 确保canvas至少有一个最小尺寸（相应调整为原来的80%）
-  newWidth = Math.max(256, newWidth);
-  newHeight = Math.max(192, newHeight);
+  // 确保canvas至少有一个最小尺寸
+  newWidth = Math.max(320, newWidth);
+  newHeight = Math.max(240, newHeight);
   
   // 更新canvas尺寸
   canvasWidth = Math.round(newWidth);
