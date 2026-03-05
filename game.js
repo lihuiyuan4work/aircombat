@@ -681,8 +681,6 @@ canvas.addEventListener("click", (e) => {
 
 // 处理窗口大小变化
 function handleResize() {
-  const maxWidth = 800;
-  const maxHeight = 600;
   let aspectRatio = 4 / 3; // 默认比例
   
   // 如果摄像头可用，使用摄像头的实际宽高比
@@ -690,18 +688,23 @@ function handleResize() {
     aspectRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
   }
   
-  // 获取父容器的可用宽度
-  const containerWidth = Math.min(maxWidth, window.innerWidth - 40);
-  const containerHeight = Math.min(maxHeight, window.innerHeight - 120);
+  // 获取窗口的可用宽度和高度，考虑页面边距
+  const containerWidth = window.innerWidth - 40; // 左右各20px边距
+  const containerHeight = window.innerHeight - 120; // 上下边距，包括状态栏和底部信息
   
   // 计算适合的canvas尺寸，保持宽高比
   let newWidth = containerWidth;
   let newHeight = newWidth / aspectRatio;
   
+  // 如果高度超过可用空间，按高度调整
   if (newHeight > containerHeight) {
     newHeight = containerHeight;
     newWidth = newHeight * aspectRatio;
   }
+  
+  // 确保canvas至少有一个最小尺寸
+  newWidth = Math.max(320, newWidth);
+  newHeight = Math.max(240, newHeight);
   
   // 更新canvas尺寸
   canvasWidth = Math.round(newWidth);
@@ -709,9 +712,14 @@ function handleResize() {
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
   
-  // 更新player位置
-  player.x = Math.min(player.x, canvasWidth - player.w);
-  player.y = Math.min(player.y, canvasHeight - player.h);
+  // 更新canvas的CSS样式，使其在窗口中居中
+  canvas.style.width = canvasWidth + 'px';
+  canvas.style.height = canvasHeight + 'px';
+  canvas.style.marginTop = ((window.innerHeight - canvasHeight - 100) / 2) + 'px';
+  
+  // 更新player位置，确保它在画布范围内
+  player.x = Math.min(Math.max(0, player.x), canvasWidth - player.w);
+  player.y = Math.min(Math.max(0, player.y), canvasHeight - player.h);
 }
 
 // 初始化大小并监听窗口变化
