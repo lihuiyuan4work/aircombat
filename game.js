@@ -42,17 +42,27 @@ const scoreEl = document.getElementById("score");
 let bgmStarted = false;
 
 function startBgm() {
-  if (!bgmAudio || bgmStarted) return;
+  if (!bgmAudio) return;
   bgmAudio.volume = 0.8;
   bgmAudio.loop = true;
-  bgmAudio
-    .play()
-    .then(() => {
-      bgmStarted = true;
-    })
-    .catch(() => {
-      // 某些浏览器需要用户再次交互才能播放
+  
+  // 即使已经开始播放，也检查并确保它在播放状态
+  if (bgmAudio.paused && !bgmStarted) {
+    bgmAudio
+      .play()
+      .then(() => {
+        bgmStarted = true;
+        console.log("背景音乐开始播放");
+      })
+      .catch(() => {
+        console.warn("自动播放背景音乐失败，可能需要用户交互");
+      });
+  } else if (bgmAudio.paused) {
+    // 如果已经标记为开始但实际上暂停了，尝试恢复播放
+    bgmAudio.play().catch(() => {
+      console.warn("恢复播放背景音乐失败");
     });
+  }
 }
 
 function stopBgm() {
@@ -68,15 +78,35 @@ function stopBgm() {
 function playExplosion() {
   if (!explosionAudio) return;
   try {
-    const boom = explosionAudio.cloneNode();
+    // 使用更可靠的方式播放爆炸音效，避免影响背景音乐
+    const boom = document.createElement('audio');
+    boom.src = explosionAudio.src;
     boom.volume = 0.9;
     boom.currentTime = 0;
-    boom.play().catch(() => {});
+    boom.play().then(() => {
+      console.log("爆炸音效播放成功");
+      // 背景音乐状态检查
+      if (bgmAudio && bgmAudio.paused && bgmStarted) {
+        console.warn("背景音乐意外暂停，尝试恢复");
+        bgmAudio.play().catch(() => {
+          console.error("恢复背景音乐失败");
+        });
+      }
+    }).catch((err) => {
+      console.warn("爆炸音效播放失败:", err);
+    });
+    
+    // 设置超时后清理音频元素
     setTimeout(() => {
-      boom.pause();
-    }, 400); // 只保留大约 0.4 秒的爆炸声
-  } catch {
-    // 忽略音频错误，避免影响游戏
+      try {
+        boom.pause();
+        boom.src = '';
+      } catch (e) {
+        // 忽略清理错误
+      }
+    }, 400);
+  } catch (err) {
+    console.error("播放爆炸音效时出错:", err);
   }
 }
 
@@ -683,9 +713,14 @@ canvas.addEventListener("click", (e) => {
 function handleResize() {
   let aspectRatio = 4 / 3; // 默认比例
   
-  // 如果摄像头可用，使用摄像头的实际宽高比
-  if (cameraEnabled && cameraVideo.videoWidth && cameraVideo.videoHeight) {
+  // 如果摄像头可用且尺寸有效，使用摄像头的实际宽高比
+  if (cameraEnabled && cameraVideo.videoWidth > 0 && cameraVideo.videoHeight > 0) {
     aspectRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+    console.log("使用摄像头宽高比:", aspectRatio, "(", cameraVideo.videoWidth, "x", cameraVideo.videoHeight, ")");
+  } else {
+    // 如果摄像头不可用或尺寸无效，使用屏幕宽高比
+    aspectRatio = window.innerWidth / window.innerHeight;
+    console.log("使用屏幕宽高比:", aspectRatio);
   }
   
   // 获取窗口的可用宽度和高度，考虑页面边距
