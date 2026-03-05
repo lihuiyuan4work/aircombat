@@ -85,22 +85,85 @@ let handPos = { x: 0.5, y: 0.8 };
 let useHandControl = false;
 
 async function initCamera() {
-  if (!cameraVideo || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    console.warn("当前环境不支持摄像头或未找到 camera 元素。");
+  if (!cameraVideo) {
+    console.warn("未找到 camera 元素。");
     return;
+  }
+  
+  // 检查浏览器是否支持摄像头API
+  if (!navigator.mediaDevices) {
+    // 尝试使用旧的API（兼容某些浏览器）
+    navigator.mediaDevices = navigator.mediaDevices || {
+      getUserMedia: function(constraints) {
+        const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        if (!getUserMedia) {
+          console.warn("当前浏览器不支持摄像头API。");
+          return Promise.reject(new Error('当前浏览器不支持摄像头API'));
+        }
+        return new Promise(function(resolve, reject) {
+          getUserMedia.call(navigator, constraints, resolve, reject);
+        });
+      }
+    };
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    // 使用更具体的视频参数，提高兼容性
+    const constraints = {
+      video: {
+        facingMode: 'user', // 使用前置摄像头
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 30 }
+      }
+    };
+    
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     cameraVideo.srcObject = stream;
     cameraEnabled = true;
     
+    // 显式设置视频播放，解决某些浏览器需要用户交互才能播放的问题
+    cameraVideo.autoplay = true;
+    cameraVideo.playsInline = true;
+    cameraVideo.muted = true;
+    
+    // 尝试直接播放视频
+    try {
+      await cameraVideo.play();
+    } catch (playErr) {
+      console.warn("自动播放视频失败，可能需要用户交互：", playErr);
+    }
+    
     // 当摄像头视频元数据加载完成后，根据实际尺寸调整canvas
     cameraVideo.addEventListener('loadedmetadata', () => {
+      console.log("摄像头视频元数据已加载：", cameraVideo.videoWidth, "x", cameraVideo.videoHeight);
       handleResize(); // 重新调整canvas尺寸以匹配摄像头宽高比
     });
+    
+    // 视频可以播放时的事件
+    cameraVideo.addEventListener('canplay', () => {
+      console.log("摄像头视频可以播放");
+    });
+    
+    // 视频播放错误事件
+    cameraVideo.addEventListener('error', (err) => {
+      console.error("摄像头视频播放错误：", err);
+    });
+    
   } catch (err) {
     console.error("获取摄像头权限失败：", err);
+    // 更详细的错误信息
+    if (err.name === 'NotAllowedError') {
+      console.error("用户拒绝了摄像头权限请求。");
+    } else if (err.name === 'NotFoundError') {
+      console.error("未找到摄像头设备。");
+    } else if (err.name === 'NotReadableError') {
+      console.error("摄像头设备被占用或无法访问。");
+    } else if (err.name === 'OverconstrainedError') {
+      console.error("无法满足摄像头参数要求。");
+    } else {
+      console.error("未知的摄像头错误：", err.message);
+    }
   }
 }
 
