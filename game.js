@@ -724,8 +724,8 @@ function handleResize() {
   }
   
   // 获取窗口的可用宽度和高度，考虑页面边距
-  const containerWidth = window.innerWidth - 40; // 左右各20px边距
-  const containerHeight = window.innerHeight - 120; // 上下边距，包括状态栏和底部信息
+  const containerWidth = window.innerWidth - 80; // 左右各40px边距
+  const containerHeight = window.innerHeight - 200; // 上下边距，包括状态栏和底部信息
   
   // 计算适合的canvas尺寸，保持宽高比
   let newWidth = containerWidth;
