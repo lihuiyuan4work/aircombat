@@ -754,6 +754,17 @@ window.addEventListener("mousemove", () => {
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     startBgm();
+    // 页面从不可见变为可见时，检查并重新初始化摄像头
+    if (!cameraVideo.srcObject || cameraVideo.paused || cameraVideo.ended) {
+      console.log("页面恢复可见，重新初始化摄像头");
+      // 先停止当前的摄像头流
+      if (cameraVideo.srcObject) {
+        cameraVideo.srcObject.getTracks().forEach(track => track.stop());
+        cameraVideo.srcObject = null;
+      }
+      // 重新初始化摄像头
+      initCamera();
+    }
   }
 });
 
