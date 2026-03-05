@@ -575,4 +575,35 @@ processHandTracking();
 window.addEventListener("load", () => {
   startBgm();
 });
+
+// 添加多种用户交互事件监听器，确保在任何用户交互时都能触发音频播放
+// 针对手机端的触摸事件
+window.addEventListener("touchstart", () => {
+  startBgm();
+  // 只需要触发一次，移除事件监听器
+  window.removeEventListener("touchstart", arguments.callee);
+});
+
+// 针对键盘事件
+window.addEventListener("keydown", () => {
+  startBgm();
+  // 只需要触发一次，移除事件监听器
+  window.removeEventListener("keydown", arguments.callee);
+});
+
+// 针对鼠标移动事件
+window.addEventListener("mousemove", () => {
+  startBgm();
+  // 只需要触发一次，移除事件监听器
+  window.removeEventListener("mousemove", arguments.callee);
+});
+
+// 针对页面可见性变化事件（当页面从后台切换到前台时）
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    startBgm();
+  }
+});
+
+// 初始尝试播放BGM
 startBgm();
